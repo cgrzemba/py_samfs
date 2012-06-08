@@ -11,3 +11,7 @@ build:
  $ swig -python samapi.i 
  $ python setup.py build_ext 
  $ python setup.py install
+
+
+The return code 0 = ok, other = error, are mapped to python exception. 
+Not all function are implemented yet, see samfs.i
