@@ -1,4 +1,4 @@
-from samfsapi import *
+from samapi import *
 
 
 # SAMFS attributes mapped into sam_stat but not in inode (ino_status_t).
@@ -61,13 +61,13 @@ SS_ACL          = 0x80000000      # Access control list present
 SS_OBJECT_FS    = 0x000100000000  # Object file system "mb" 
 
 def isOffline(path):
-    return (stat(path).attr & SS_OFFLINE) != 0
+    return (sam_stat(path).attr & SS_OFFLINE) != 0
     
 def isArchDone(path):
-    return (stat(path).attr & SS_ARCHDONE) != 0
+    return (sam_stat(path).attr & SS_ARCHDONE) != 0
 
 def hasCopy(path):
-    return (stat(path).attr & SS_ARCHIVED) != 0
+    return (sam_stat(path).attr & SS_ARCHIVED) != 0
 
 def isWorm(path):
-    return (stat(path).attr & SS_WORM) != 0
+    return (sam_stat(path).attr & SS_WORM) != 0

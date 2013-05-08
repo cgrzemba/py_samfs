@@ -15,3 +15,8 @@ build:
 
 The return code 0 = ok, other = error, are mapped to python exception. 
 Not all function are implemented yet, see samfs.i
+
+ToDO
+====
+- exception has no error message
+

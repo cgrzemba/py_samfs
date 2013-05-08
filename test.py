@@ -7,5 +7,5 @@ for root, dirs, files in walk('/sam'):
     for file in ((join(root, name)) for name in files):
         if isOffline(file) and not isArchDone(file):
         	print file, 
-        	print stat(file).attr,
-		print stat(file).copies
+        	print sam_stat(file).attr,
+		print sam_stat(file).copies
