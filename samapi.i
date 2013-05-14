@@ -44,7 +44,7 @@
 
 %inline %{
 static PyTypeObject DevStatResultType = {0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-static PyStructSequence_Field DevStatResultFileds[]={
+static PyStructSequence_Field DevStatResultFileds[8]={
   {"type","Media type"},
   {"name","Device name"},
   {"vsn","VSN of mounted volume"},
@@ -352,9 +352,19 @@ $target		- ???
 } 
 
 %typemap(out) int %{
-  ;
+  $result = PyInt_FromLong($1);
 %}
+ 
 %apply int {ushort_t};
+
+// throw exception if return <> 0
+%exception %{
+   $action
+   if (result!=0) {
+       PyErr_SetString(PyExc_Exception,strerror(errno)); 
+       goto fail;
+   }
+%}
 
 /* sets results in buf -> return PyObject, status int will override*/
 int sam_devstat(ushort_t eq, sam_devstat_t *buf, size_t bufsize);
@@ -376,18 +386,39 @@ int sam_restore_file(const char *path, struct sam_stat *buf, size_t bufsize);
 int sam_opencat(const char *path, struct sam_cat_tbl *buf, size_t bufsize);
 
 /* the following functions return status as integer, but all should throw exception on error */
-%typemap(out) int {
-  $result = PyInt_FromLong($1);
+
+
+/* %varargs(7,int numopts = 0) sam_rearch; */ 
+%typemap(in) ( int num_opts , ...)(char *args[10]) {
+    int i;
+    int argc = PyInt_AsLong($input);
+    for (i = 0; i < 10; i++) args[i] = 0;
+    if (argc > 10) {
+       PyErr_SetString(PyExc_ValueError,"Too many arguments");
+       return NULL;
+    }
+    for (i = 0; i < argc; i++) {
+       PyObject *o = PyTuple_GetItem(varargs,i);
+       if (!PyString_Check(o)) {
+           PyErr_SetString(PyExc_ValueError,"Expected a string");
+           return NULL;
+       }
+       args[i] = PyString_AsString(o);
+    }
+    $2 = (void *) args;
+    $1 = argc;
+}
+%feature("action") sam_rearch {
+   char **args = args2;
+   result = sam_rearch(arg1, arg2, args[0], args[1], args[2], args[3], args[4],
+                   args[5],args[6],args[7],args[8],args[9], NULL);
+}
+%feature("action") sam_undamage {
+   char **args = args2;
+   result = sam_undamage(arg1, arg2, args[0], args[1], args[2], args[3], args[4],
+                   args[5],args[6],args[7],args[8],args[9], NULL);
 }
 
-// throw exception if return <> 0
-%exception %{
-   $action
-   if (result!=0) {
-       PyErr_SetObject(PyExc_Exception,PyInt_FromString(strerror(errno),NULL,32));
-       goto fail;
-   }
-%}
 
 int sam_undamage(const char *path, int num_opts, ... );
 int sam_archive(const char *path, const char *ops);

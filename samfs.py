@@ -26,7 +26,7 @@ SS_CSVAL        = 0x00000100      # Valid checksum exists in inode
 SS_CSUSE        = 0x00000200      # Checksum will be used upon stage 
 SS_CSGEN        = 0x00000400      # Checksum will be generated upon - 
                                         # archive 
-#      SS_SAMFS        = 0x00000800      used by sam_stat() - see above 
+SS_SAMFS        = 0x00000800      #  SAM-FS file 
 
 SS_ARCHDONE     = 0x00001000      # File has all required -  
                                         # archiving done 
@@ -34,7 +34,7 @@ SS_ARCHDONE     = 0x00001000      # File has all required -
 SS_PARTIAL      = 0x00004000      # Partial extents are online 
 SS_OFFLINE      = 0x00008000      # File is offline 
 
-#      SS_ARCHIVED     = 0x00010000      used by sam_stat() - see above 
+SS_ARCHIVED     = 0x00010000      # used by sam_stat() - see above 
 SS_SEGMENT_A    = 0x00020000      # Segment attribute 
 #      SS_DATA_V       = 0x00040000      used by sam_stat() - see above 
 #      SS_AIO          = 0x00080000      used by sam_stat() - see above 
@@ -71,3 +71,6 @@ def hasCopy(path):
 
 def isWorm(path):
     return (sam_stat(path).attr & SS_WORM) != 0
+    
+def isDamaged(path):
+    return (sam_stat(path).attr & SS_DAMAGED) != 0
