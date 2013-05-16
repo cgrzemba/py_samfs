@@ -66,8 +66,8 @@ typedef void shm_ptr_tbl_t;
 shm_ptr_tbl_t  *shm_ptr_tbl;
 */
 
-static PyTypeObject StatResultType = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-static PyStructSequence_Field StatResultFileds[] = {
+static PyTypeObject StatResultType = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+static PyStructSequence_Field StatResultFileds[25] = {
     {"st_mode",    "protection bits"},
     {"st_ino",     "inode"},
     {"st_dev",     "device"},
@@ -84,6 +84,14 @@ static PyStructSequence_Field StatResultFileds[] = {
     {"attr",   "samfs attr"},
     {"flags",   "samfs flags for file"},
     {"copies",   "number of copies"},
+    {"copy0_flags", "flags of copy1"}, 
+    {"copy1_flags", "flags of copy2"}, 
+    {"copy2_flags", "flags of copy3"}, 
+    {"copy3_flags", "flags of copy4"}, 
+    {"copy0_vsn", "vsn of copy1"}, 
+    {"copy1_vsn", "vsn of copy2"}, 
+    {"copy2_vsn", "vsn of copy3"}, 
+    {"copy3_vsn", "vsn of copy4"}, 
     {0}
 };
 
@@ -91,7 +99,7 @@ static PyStructSequence_Desc StatResultDesc = {
     "stat_result", /* name */
     NULL, /* doc */
     StatResultFileds,
-    16
+    24
 };
 
 static PyTypeObject SectionResultType = {0,0,0,0,0,0,0,0};
@@ -189,7 +197,7 @@ $target		- ???
     if (result < 0){
         if($2 == sizeof(sam_devstat_t))
 	        free($1);
-        PyErr_SetObject(PyExc_Exception,PyInt_FromString(strerror(errno),NULL,32));
+	    PyErr_SetString(PyExc_Exception,strerror(errno)); 
  	    goto fail;
     }
     PyObject *v = PyStructSequence_New(&DevStatResultType);
@@ -200,9 +208,9 @@ $target		- ???
     }
     PyStructSequence_SET_ITEM(v, 0, PyInt_FromLong((long)$1->type));
     PyStructSequence_SET_ITEM(v, 1,
-                              PyLong_FromString($1->name,NULL,32));
+                              PyString_FromString($1->name));
     PyStructSequence_SET_ITEM(v, 2,
-                              PyLong_FromString($1->vsn,NULL,32));
+                              PyString_FromString($1->vsn));
     PyStructSequence_SET_ITEM(v, 3, PyInt_FromLong((long)$1->state));
     PyStructSequence_SET_ITEM(v, 4, PyInt_FromLong((long)$1->status));
     PyStructSequence_SET_ITEM(v, 5, PyInt_FromLong((long)$1->space));
@@ -228,7 +236,7 @@ $target		- ???
     if (result < 0){
         if($2 == sizeof(struct sam_stat))
             free($1);
-        PyErr_SetObject(PyExc_Exception,PyInt_FromString(strerror(errno),NULL,32));
+        PyErr_SetString(PyExc_Exception,strerror(errno)); 
         goto fail;
     }
     PyObject *v = PyStructSequence_New(&StatResultType);
@@ -263,7 +271,12 @@ $target		- ???
     PyStructSequence_SET_ITEM(v, 13, PyInt_FromLong((long)$1->attr));
     PyStructSequence_SET_ITEM(v, 14, PyInt_FromLong((long)$1->flags));
     { int n; int copies=0;
+#if MAX_ARCHIVE>4
+#error struct can only hold 4 copies, update StatResultFileds
+#endif
       for (n = 0; n < MAX_ARCHIVE; n++) {
+        PyStructSequence_SET_ITEM(v, 16+n , PyInt_FromLong((long)$1->copy[n].flags ));
+        PyStructSequence_SET_ITEM(v, 20+n , PyString_FromString($1->copy[n].vsn));
         if (!($1->copy[n].flags & CF_ARCHIVED)) continue;
         copies++;
       }
@@ -288,7 +301,7 @@ $target		- ???
     if (result < 0){
         if($2 == sizeof(struct sam_section))
 	       free($1);
-        PyErr_SetObject(PyExc_Exception,PyInt_FromString(strerror(errno),NULL,32));
+	    PyErr_SetString(PyExc_Exception,strerror(errno)); 
 	    goto fail;
     }
     PyObject *v = PyStructSequence_New(&SectionResultType);
@@ -297,7 +310,7 @@ $target		- ???
 	       free($1);
         goto fail;
     }
-    PyStructSequence_SET_ITEM(v, 0,PyInt_FromString($1->vsn,NULL,32));
+    PyStructSequence_SET_ITEM(v, 0,PyString_FromString($1->vsn));
     PyStructSequence_SET_ITEM(v, 1,PyLong_FromLongLong($1->length));
     PyStructSequence_SET_ITEM(v, 2,PyLong_FromLongLong($1->position));
     PyStructSequence_SET_ITEM(v, 3,PyLong_FromLongLong((long)$1->offset));
@@ -320,7 +333,7 @@ $target		- ???
     if (result < 0){
         if($2 == sizeof(struct sam_rminfo))
 	       free($1);
-        PyErr_SetObject(PyExc_Exception,PyInt_FromString(strerror(errno),NULL,32));
+	   PyErr_SetString(PyExc_Exception,strerror(errno));       
 	    goto fail;
     }
     PyObject *v = PyStructSequence_New(&RminfoResultType);
@@ -335,11 +348,11 @@ $target		- ???
     PyStructSequence_SET_ITEM(v, 3,PyLong_FromLongLong((long)$1->position));
     PyStructSequence_SET_ITEM(v, 4,PyLong_FromLongLong((long)$1->required_size));
     PyStructSequence_SET_ITEM(v, 5,PyLong_FromLongLong((long)$1->block_size));
-    PyStructSequence_SET_ITEM(v, 6,PyInt_FromString($1->file_id,NULL,32));
+    PyStructSequence_SET_ITEM(v, 6,PyString_FromString($1->file_id));
     PyStructSequence_SET_ITEM(v, 7,PyLong_FromLong((long)$1->version));
-    PyStructSequence_SET_ITEM(v, 8,PyInt_FromString($1->owner_id,NULL,32));
-    PyStructSequence_SET_ITEM(v, 9,PyInt_FromString($1->group_id,NULL,32));
-    PyStructSequence_SET_ITEM(v, 10,PyInt_FromString($1->info,NULL,160));
+    PyStructSequence_SET_ITEM(v, 8,PyString_FromString($1->owner_id));
+    PyStructSequence_SET_ITEM(v, 9,PyString_FromString($1->group_id));
+    PyStructSequence_SET_ITEM(v, 10,PyString_FromString($1->info));
     PyStructSequence_SET_ITEM(v, 11,PyLong_FromLong((long)$1->n_vsns));
     PyStructSequence_SET_ITEM(v, 12,PyLong_FromLong((long)$1->c_vsn));
     if($2 == sizeof(struct sam_section))
