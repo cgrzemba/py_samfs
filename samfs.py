@@ -1,4 +1,8 @@
+from os import walk
+from os.path import join
 from samapi import *
+from collections import namedtuple
+
 
 
 # SAMFS attributes mapped into sam_stat but not in inode (ino_status_t).
@@ -58,7 +62,24 @@ SS_DFACL        = 0x40000000      # Default access control list -
                                         # present 
 SS_ACL          = 0x80000000      # Access control list present 
 
-SS_OBJECT_FS    = 0x000100000000  # Object file system "mb" 
+SS_OBJECT_FS    = 0x000100000000  # Object file system "mb"
+
+#
+# * Copy flag masks.
+#
+CF_STALE =               0x0001  # This archive copy is stale
+CF_REARCH =              0x0002  # Copy is to be rearchived 
+CF_ARCH_I =              0x0004  # Copy is to be archived immediately 
+CF_VERIFIED =            0x0008  # Copy has been verified 
+CF_DAMAGED =             0x0010  # This archive copy is damaged 
+CF_UNARCHIVED =          0x0020  # This archive copy was unarchived 
+CF_INCONSISTENT =        0x0040  # This archive copy is inconsistent 
+CF_ARCHIVED =            0x0080  # This archive copy made 
+CF_AR_FLAGS_MASK =       0x00FF  # the flags in the stat struct from 
+                                        # the AR_FLAGS in the inode 
+CF_PAX_ARCH_FMT =        0x8000  # from SAR_hdr_off0 in the inode 
+
+
 
 def isOffline(path):
     return (sam_stat(path).attr & SS_OFFLINE) != 0
@@ -74,3 +95,76 @@ def isWorm(path):
     
 def isDamaged(path):
     return (sam_stat(path).attr & SS_DAMAGED) != 0
+
+CF_BASE = 16 # the 16 correspondes to the index of copy0_flags in static PyStructSequence_Field StatResultFileds in samapi.i
+VSN_BASE = 20 # the 20 correspondes to the index of copy0_vsn in static PyStructSequence_Field StatResultFileds in samapi.i
+# ncopy in range 1..4
+def willRearch(path,ncopy):
+    return (sam_stat(path)[CF_BASE + ncopy-1] & CF_REARCH) != 0 
+    
+def isStale(path,copy):
+    return (sam_stat(path)[CF_BASE + ncopy-1] & CF_STALE) != 0
+    
+def isDamaged(path,copy):
+    return (sam_stat(path)[CF_BASE + ncopy-1] & CF_DAMAGED) != 0
+
+def isArchived(path,copy):
+    return (sam_stat(path)[CF_BASE + ncopy-1] & CF_ARCHIVED) != 0
+
+def isUnArchived(path,copy):
+    return (sam_stat(path)[CF_BASE + ncopy-1] & CF_UNARCHIVED) != 0
+
+def isInconsistent(path,copy):
+    return (sam_stat(path)[CF_BASE + ncopy-1] & CF_INCONSISTENT) != 0
+    
+def hasDamagedCopy(path):
+    filestat = sam_stat(path)
+    for i in range(4):
+        if filestat[CF_BASE + i] & CF_DAMAGED:
+            return True
+    return False
+
+def hasRearchCopy(path):
+    filestat = sam_stat(path)
+    for i in range(4):
+        if filestat[CF_BASE + i] & CF_REARCH:
+            return True
+    return False
+
+##
+# this function returns all vsn which have a copy off the file
+# @def getAllVSNForFile(path)
+# @param path filename
+# @return list of vsn as dictionary { vsn: copyno }
+#    copyno in range 1..4
+VSN = namedtuple('VSN','vsn copyno')
+def getAllVSNForFile(path):
+    vsndict = {}
+    filestat = sam_stat(path)
+    for i in range(4):
+        if filestat[VSN_BASE + i] != '':
+            vsndict[filestat[VSN_BASE + i]] = i+1
+    return vsndict;
+    
+##
+# this function returns all files which have a copy on vsn
+# @def getAllFilesForVSN(path,vsn)
+# @param path basedir looking for files
+# @param vsn looking for files which have copies on this vsn
+# @return dictionary of files:copyno
+def getAllFilesForVSN(path,vsn):
+    filedict = {}
+    for root, dirs, files in walk(path):
+        for paths in ((join(root, name)) for name in files):
+            if vsn in getAllVSNForFile(paths).keys():
+                filedict[paths] = getAllVSNForFile(paths)[vsn] 
+    return filedict
+
+def getAllFilesForRearch(path,vsn):
+    filelist = []
+    for root, dirs, files in walk(path):
+        for paths in ((join(root, name)) for name in files):
+            if vsn in getAllVSNForFile(paths).keys() and willRearch(paths,getAllVSNForFile(paths)[vsn]):
+                    filelist.append(paths)
+    return filelist
+
