@@ -2,12 +2,17 @@ from os import walk
 from os.path import join, getsize
 from samfs import *
 
-basedir = '/samtest'
+filelist = {}
+basedir = '/sam/wg/projekte/archive'
 
 for root, dirs, files in walk(basedir):
-    print root,
+#     print root,
     for file in ((join(root, name)) for name in files):
-        if not isOffline(file) or isArchDone(file):
-         print file,
-         print "%x" % sam_stat(file).attr,
-         print sam_stat(file).copies
+        try:
+            if not isOffline(file) or isArchDone(file):
+                filelist[file] = sam_stat(file).attr,
+        except IOError, e: 
+            if e.errno in (2,13):
+                 print "IO ERROR: ", e.strerror, file
+
+print len(filelist)

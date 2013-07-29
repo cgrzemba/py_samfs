@@ -1,0 +1,49 @@
+#!/bin/ksh
+
+src=..
+destdir=/tmp/py-sam
+whoami=$(who am i| awk '{ print $1; }')
+group=`id -a | sed -e 's/.* gid=[0-9]*(\(.*\)) .*/\1/'`
+arch=`uname -p`
+osver=`uname -r`
+PYTHON=/usr/ccs/bin/python
+
+( cd $src
+ $PYTHON setup.py build_ext
+ [ -d $destdir ] && rm -r $destdir
+ mkdir -p $destdir
+ $PYTHON setup.py install --root=$destdir
+)
+
+cat > pkginfo << EOM
+PKG=py-samfs
+NAME=Python SAM-FS API
+DESC=This is a python binding for the SAM-FS API
+ARCH=$arch
+SUNW_PRODNAME="SunOS"
+SUNW_PRODVERS=$osver
+SUNW_PKGTYPE="usr"
+SUNW_PKGVERS=1.0
+CATEGORY="application"
+SUNW_PKG_ALLZONES=false
+SUNW_PKG_HOLLOW=false
+SUNW_PKG_THISZONE=false
+VENDOR="opensource"
+MAXINST=1
+VERSION=0.1
+BASEDIR=/
+CLASSES="none"
+EOM
+
+pwd=`pwd`
+echo "i pkginfo=./pkginfo" > $pwd/prototype
+cd $destdir && pkgproto . >> $pwd/prototype
+(echo "g/$whoami/s/$whoami/root/"
+ echo "g/$group/s/$group/bin/"
+ echo "/ prototype /d"
+ echo "g/^d none /d"
+ echo "w"
+ echo "q" ) | ed -s $pwd/prototype
+
+pkgmk -o  -b $destdir -f $pwd/prototype
+pkgtrans /var/spool/pkg $pwd/py-samfs.pkg py-samfs

@@ -197,7 +197,7 @@ $target		- ???
     if (result < 0){
         if($2 == sizeof(sam_devstat_t))
 	        free($1);
-	    PyErr_SetString(PyExc_Exception,strerror(errno)); 
+	    PyErr_SetFromErrno(PyExc_IOError);
  	    goto fail;
     }
     PyObject *v = PyStructSequence_New(&DevStatResultType);
@@ -236,7 +236,7 @@ $target		- ???
     if (result < 0){
         if($2 == sizeof(struct sam_stat))
             free($1);
-        PyErr_SetString(PyExc_Exception,strerror(errno)); 
+        PyErr_SetFromErrno(PyExc_IOError);
         goto fail;
     }
     PyObject *v = PyStructSequence_New(&StatResultType);
@@ -301,7 +301,7 @@ $target		- ???
     if (result < 0){
         if($2 == sizeof(struct sam_section))
 	       free($1);
-	    PyErr_SetString(PyExc_Exception,strerror(errno)); 
+        PyErr_SetFromErrno(PyExc_IOError);
 	    goto fail;
     }
     PyObject *v = PyStructSequence_New(&SectionResultType);
@@ -333,7 +333,7 @@ $target		- ???
     if (result < 0){
         if($2 == sizeof(struct sam_rminfo))
 	       free($1);
-	   PyErr_SetString(PyExc_Exception,strerror(errno));       
+        PyErr_SetFromErrno(PyExc_IOError);
 	    goto fail;
     }
     PyObject *v = PyStructSequence_New(&RminfoResultType);
@@ -374,7 +374,7 @@ $target		- ???
 %exception %{
    $action
    if (result!=0) {
-       PyErr_SetString(PyExc_Exception,strerror(errno)); 
+       PyErr_SetFromErrno(PyExc_IOError); 
        goto fail;
    }
 %}
