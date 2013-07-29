@@ -3,7 +3,7 @@ from os.path import join, getsize
 from samfs import *
 
 filelist = {}
-basedir = '/sam/wg/projekte/archive'
+basedir = '/sam'
 
 for root, dirs, files in walk(basedir):
 #     print root,
