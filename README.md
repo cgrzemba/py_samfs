@@ -18,7 +18,7 @@ define REMOTE and use --remote option for build RPC API
 The return code 0 = ok, other = error, are mapped to python exception. 
 Not all function are implemented yet, see samfs.i
 
-For use the RPC API you have to set SAMHOST environment variable
+For use the RPC API you have to set SAMHOST environment variable,  
 for config SAM RPC see 
 
     $ man intro_libsam  
