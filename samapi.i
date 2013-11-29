@@ -1,8 +1,8 @@
 /************************************************************************
  *
- * Main File check_samfs
+ * Main File samfsapi
  * Written By: Carsten Grzemba (cgrzemba@opencsw.org)
- * Last Modified: 07-06-2012
+ * Last Modified: 29-11-2013
  *
  * # CDDL HEADER START
  * #
@@ -25,24 +25,33 @@
  ************************************************************************/
 
 // API description for python module genration with SWIG */ 
+#if defined(REMOTE)
+%module samapi_rpc
+#else
 %module samapi
+#endif
  %{
 #include <string.h>
 #include <errno.h>
 #include "lib.h"
 #include "stat.h"
-/* #include "mig.h" */
+/* #include "mig.h" */ 
 #include "rminfo.h"
 #include "catalog.h"
-#include "devstat.h"
+#if defined(REMOTE)
+# include "samrpc.h"
+#else
+# include "devstat.h"
+#endif /* defined(REMOTE) */
 
 #include "structseq.h"
 
 %}
 
-%inline %{ typedef struct sam_devstat sam_devstat_t; %}
+#if !defined(REMOTE)
+%inline %{ 
+typedef struct sam_devstat sam_devstat_t; 
 
-%inline %{
 static PyTypeObject DevStatResultType = {0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 static PyStructSequence_Field DevStatResultFileds[8]={
   {"type","Media type"},
@@ -61,13 +70,12 @@ static PyStructSequence_Desc DevStatResultDesc = {
     DevStatResultFileds,
     7
 };
-/* needed by sammig
-typedef void shm_ptr_tbl_t; 
-shm_ptr_tbl_t  *shm_ptr_tbl;
-*/
+%}
+#endif
 
-static PyTypeObject StatResultType = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-static PyStructSequence_Field StatResultFileds[25] = {
+%inline %{ 
+static PyTypeObject StatResultType = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+static PyStructSequence_Field StatResultFileds[29] = {
     {"st_mode",    "protection bits"},
     {"st_ino",     "inode"},
     {"st_dev",     "device"},
@@ -92,6 +100,10 @@ static PyStructSequence_Field StatResultFileds[25] = {
     {"copy1_vsn", "vsn of copy2"}, 
     {"copy2_vsn", "vsn of copy3"}, 
     {"copy3_vsn", "vsn of copy4"}, 
+    {"copy0_media", "media of copy1"}, 
+    {"copy1_media", "media of copy2"}, 
+    {"copy2_media", "media of copy3"}, 
+    {"copy3_media", "media of copy4"}, 
     {0}
 };
 
@@ -147,15 +159,24 @@ static PyStructSequence_Desc RminfoResultDesc = {
 %}
 
 /* char *sam_mig_mount_media(char *, char *); */
+#if !defined(REMOTE)
 char *sam_devstr(uint_t p);
+#endif
 char *sam_attrtoa(int attr, char *string);
 
 %init %{
+#if defined(REMOTE)
+	if (sam_initrpc(NULL) < 0) { /* get samhost from getenv("SAMHOST") */
+		perror("sam_initrpc");
+		exit(1);
+	}
+#else
     if (DevStatResultType.tp_name == 0) {
         PyStructSequence_InitType(&DevStatResultType, &DevStatResultDesc);
     }
     Py_INCREF((PyObject*) &DevStatResultType);
     PyModule_AddObject(m, "devstat_result", (PyObject*) &DevStatResultType);
+#endif /* defined(REMOTE) */
     if (StatResultType.tp_name == 0) {
         PyStructSequence_InitType(&StatResultType, &StatResultDesc);
     }
@@ -187,6 +208,7 @@ $1		-  local variable
 $target		- ???
 */
 
+#if !defined(REMOTE)
 %typemap(in,numinputs=0) ( sam_devstat_t *buf, size_t bufsize) %{
  $2 = sizeof (sam_devstat_t);
  $1 = malloc($2);
@@ -225,6 +247,7 @@ $target		- ???
     $result = v;
 } 
 %apply  sam_devstat_t* { struct sam_devstat * };
+#endif
 
 %typemap(in,numinputs=0) (struct sam_stat *buf, size_t bufsize) %{
  $2 = sizeof (struct sam_stat);
@@ -277,6 +300,7 @@ $target		- ???
       for (n = 0; n < MAX_ARCHIVE; n++) {
         PyStructSequence_SET_ITEM(v, 16+n , PyInt_FromLong((long)$1->copy[n].flags ));
         PyStructSequence_SET_ITEM(v, 20+n , PyString_FromString($1->copy[n].vsn));
+        PyStructSequence_SET_ITEM(v, 24+n , PyString_FromString($1->copy[n].media));
         if (!($1->copy[n].flags & CF_ARCHIVED)) continue;
         copies++;
       }
@@ -380,14 +404,13 @@ $target		- ???
 %}
 
 /* sets results in buf -> return PyObject, status int will override*/
+int sam_stat(const char *path, struct sam_stat *buf, size_t bufsize);
+int sam_lstat(const char *path, struct sam_stat *buf, size_t bufsize);
+#if !defined(REMOTE)
 int sam_devstat(ushort_t eq, sam_devstat_t *buf, size_t bufsize);
 int sam_vsn_stat(const char *path, int copy, struct sam_section *buf, size_t bufsize);
 int sam_readrminfo(const char *path, struct sam_rminfo *buf, size_t bufsize);
 int sam_request(const char *path, struct sam_rminfo *buf, size_t bufsize);
-int sam_stat(const char *path, struct sam_stat *buf, size_t bufsize);
-int sam_lstat(const char *path, struct sam_stat *buf, size_t bufsize);
-int sam_segment_stat(const char *path, struct sam_stat *buf, size_t bufsize);
-int sam_segment_lstat(const char *path, struct sam_stat *buf, size_t bufsize);
 int sam_getcatalog(int cat_handle, uint_t start_slot, uint_t end_slot,
                 struct sam_cat_ent *buf, size_t entbufsize);
 int sam_restore_copy(const char *path, int copy, struct sam_stat *buf,
@@ -397,6 +420,7 @@ int sam_segment_vsn_stat(const char *path, int copy, int segment_index,
 
 int sam_restore_file(const char *path, struct sam_stat *buf, size_t bufsize);
 int sam_opencat(const char *path, struct sam_cat_tbl *buf, size_t bufsize);
+#endif
 
 /* the following functions return status as integer, but all should throw exception on error */
 
@@ -432,11 +456,14 @@ int sam_opencat(const char *path, struct sam_cat_tbl *buf, size_t bufsize);
                    args[5],args[6],args[7],args[8],args[9], NULL);
 }
 
-
-int sam_undamage(const char *path, int num_opts, ... );
 int sam_archive(const char *path, const char *ops);
-/* int sam_mig_rearchive(char *mount_point, char  **vsns, char *media); */
 int sam_stage(const char *path, const char *ops);
+int sam_release(const char *name, const char *opns);
+int sam_segment(const char *name, const char *opns);
+int sam_setfa(const char *name, const char *opns);
+#if !defined(REMOTE)
+int sam_undamage(const char *path, int num_opts, ... );
+/* int sam_mig_rearchive(char *mount_point, char  **vsns, char *media); */
 int sam_rearch(const char *path, int num_opts, ... );
 /* int sam_mig_release_device(char *device); */
 int sam_exarchive(const char *path, int num_opts, ... );
@@ -453,9 +480,7 @@ int sam_mig_stage_file(tp_stage_t *);
 int sam_mig_stage_end(tp_stage_t *stage_req, int error);
 */
 int sam_unarchive(const char *name, int num_opts, ...);
-int sam_release(const char *name, const char *opns);
 int sam_damage(const char *name, int num_opts, ...);
 int sam_ssum(const char *name, const char *opns);
-int sam_segment(const char *name, const char *opns);
 int sam_unrearch(const char *name, int num_opts, ...);
-int sam_setfa(const char *name, const char *opns);
+#endif

@@ -2,12 +2,10 @@ from os import walk
 from os.path import join, getsize
 from samfs import *
 
-basedir = '/samtest'
+basedir = '/samtest/aa/00/'
 
 for root, dirs, files in walk(basedir):
-    print root,
     for file in ((join(root, name)) for name in files):
-        if isOffline(file) and not isArchDone(file):
-         print file,
-         print "%x" % sam_stat(file).attr,
-         print sam_stat(file).copies
+        if isOffline(file):
+            print file,
+            sam_stage(file,'i')
