@@ -12,7 +12,7 @@ define REMOTE and use --remote option for build RPC API
 
     $ swig -python [-DREMOTE] samapi.i  
     $ python setup.py build_ext [--remote]  
-    $ python setup.py install [--remote]  
+    $ sudo python setup.py install [--remote]  
 
 
 The return code 0 = ok, other = error, are mapped to python exception. 

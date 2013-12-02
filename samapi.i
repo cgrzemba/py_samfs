@@ -74,8 +74,8 @@ static PyStructSequence_Desc DevStatResultDesc = {
 #endif
 
 %inline %{ 
-static PyTypeObject StatResultType = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-static PyStructSequence_Field StatResultFileds[29] = {
+static PyTypeObject StatResultType = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+static PyStructSequence_Field StatResultFileds[37] = {
     {"st_mode",    "protection bits"},
     {"st_ino",     "inode"},
     {"st_dev",     "device"},
@@ -104,6 +104,14 @@ static PyStructSequence_Field StatResultFileds[29] = {
     {"copy1_media", "media of copy2"}, 
     {"copy2_media", "media of copy3"}, 
     {"copy3_media", "media of copy4"}, 
+    {"copy0_position", "position of copy1"}, 
+    {"copy1_position", "position of copy2"}, 
+    {"copy2_position", "position of copy3"}, 
+    {"copy3_position", "position of copy4"}, 
+    {"copy0_offset", "offset of copy1"}, 
+    {"copy1_offset", "offset of copy2"}, 
+    {"copy2_offset", "offset of copy3"}, 
+    {"copy3_offset", "offset of copy4"}, 
     {0}
 };
 
@@ -111,7 +119,7 @@ static PyStructSequence_Desc StatResultDesc = {
     "stat_result", /* name */
     NULL, /* doc */
     StatResultFileds,
-    24
+    36
 };
 
 static PyTypeObject SectionResultType = {0,0,0,0,0,0,0,0};
@@ -301,6 +309,8 @@ $target		- ???
         PyStructSequence_SET_ITEM(v, 16+n , PyInt_FromLong((long)$1->copy[n].flags ));
         PyStructSequence_SET_ITEM(v, 20+n , PyString_FromString($1->copy[n].vsn));
         PyStructSequence_SET_ITEM(v, 24+n , PyString_FromString($1->copy[n].media));
+        PyStructSequence_SET_ITEM(v, 28+n , PyInt_FromLong((long)$1->copy[n].position ));
+        PyStructSequence_SET_ITEM(v, 32+n , PyInt_FromLong((long)$1->copy[n].offset ));
         if (!($1->copy[n].flags & CF_ARCHIVED)) continue;
         copies++;
       }

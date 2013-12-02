@@ -2,10 +2,11 @@ from distutils.core import setup, Extension
 import re, sys
 
 conf_extra_compile_args = ['-g']
+
 if "--remote" in sys.argv:
     MOD = 'samapi_rpc'
     libdirs = ['/opt/SUNWsamfs/client/lib']
-    libs = ['samrpc']
+    libs = ['samrpc','nsl']
     conf_extra_compile_args += ['-DREMOTE']
     sys.argv.remove("--remote")
 else: 
