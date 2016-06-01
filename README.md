@@ -6,6 +6,10 @@ Python Binding for Oracle<-Sun<-LSC SamFS API
 This Python Binding is created by SWIG (http://www.swig.org) on top of the C-API.
 Swig for Solaris is available form http://www.opencsw.org.
 
+A short intro to libsam:
+
+http://www.oracle.com/technetwork/server-storage/solaris/libsam-139052.html
+
 build:
 
 define REMOTE and use --remote option for build RPC API
@@ -19,6 +23,6 @@ The return code 0 = ok, other = error, are mapped to python exception.
 Not all function are implemented yet, see samfs.i
 
 For use the RPC API you have to set SAMHOST environment variable,  
-for config SAM RPC see:
+for config SAM RPC see also:
 
     $ man intro_libsam  
