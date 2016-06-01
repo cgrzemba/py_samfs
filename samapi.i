@@ -24,6 +24,7 @@
  * # CDDL HEADER END
  ************************************************************************/
 
+%include <typemaps.i>
 // API description for python module genration with SWIG */ 
 #if defined(REMOTE)
 %module samapi_rpc
@@ -37,10 +38,10 @@
 #include "stat.h"
 /* #include "mig.h" */ 
 #include "rminfo.h"
-#include "catalog.h"
 #if defined(REMOTE)
 # include "samrpc.h"
 #else
+# include "catalog.h"
 # include "devstat.h"
 #endif /* defined(REMOTE) */
 
@@ -146,7 +147,7 @@ static PyStructSequence_Field RminfoResultFields [] = {
        {"position","Current position on the media"},
        {"required_size","Required size on a request"},
        {"block_size","Media block size"},
-       {"file_id","Recorded file name"},
+       {"file_id","Recorded file ID"},
        {"version","Version number"},
        {"owner_id","Owner identifier"},
        {"group_id","Group identifier"},
@@ -357,10 +358,44 @@ $target		- ???
     $result = v;
 } 
 
-%typemap(in,numinputs=0) ( struct sam_rminfo *buf, size_t bufsize) %{
- $2 = sizeof (struct sam_rminfo);
- $1 = malloc($2);
-%}
+
+
+/*
+%typemap(in) ( struct sam_rminfo *buf, size_t bufsize) {
+    if (PyList_Check($input)) {
+        $2 = sizeof (struct sam_rminfo);
+        $1 = malloc($2);
+        $1->sam_section = (struct sam_section*) malloc (sizeof (struct sam_section))
+        
+        
+        int i=0;
+        $1->flags = PyLong_AsUnsignedLong(PyList_GetItem($input,i++));
+        strncpy($1->media, PyString_AsString(PyList_GetItem($input,i++)),4);
+        $1->creation_time = PyLong_AsUnsignedLong(PyList_GetItem($input,i++));
+        $1->sam_section[0]->position = $1->position = PyLong_AsUnsignedLong(PyList_GetItem($input,i++));
+        $1->required_size = PyLong_AsUnsignedLong(PyList_GetItem($input,i++));
+        strncpy($1->file_id, PyString_AsString(PyList_GetItem($input,i++)),32);
+        $1->version = PyInt_AsLong(PyList_GetItem($input,i++));
+        $1->owner_id, PyInt_AsLong(PyList_GetItem($input,i++));
+        $1->group_id, PyInt_AsLong(PyList_GetItem($input,i++));
+        strncpy($1->info, PyString_AsString(PyList_GetItem($input,i++)),160);
+        $1->n_vsns, PyInt_AsLong(PyList_GetItem($input,i++));
+        $1->c_vsns, PyInt_AsLong(PyList_GetItem($input,i++));
+        strncpy($1->sam_section[0]->vsn, String_AsString(PyList_GetItem($input,i++)),32);
+        
+    } else {
+        PyErr_SetString(PyExc_TypeError,"not a list");
+        return NULL;
+    }
+}
+
+
+%typemap(freearg) (int argc, char **argv) {
+    free((char *) $1);
+}
+
+
+*/ 
 
 %typemap(argout) (struct sam_rminfo *buf, size_t bufsize) {
     Py_XDECREF($result);
@@ -389,14 +424,38 @@ $target		- ???
     PyStructSequence_SET_ITEM(v, 10,PyString_FromString($1->info));
     PyStructSequence_SET_ITEM(v, 11,PyLong_FromLong((long)$1->n_vsns));
     PyStructSequence_SET_ITEM(v, 12,PyLong_FromLong((long)$1->c_vsn));
-    if($2 == sizeof(struct sam_section))
-	   free($1);
     if (PyErr_Occurred()) {
         Py_DECREF(v);
         goto fail;
     }
     $result = v;
 } 
+
+%typemap(in,noblock=1,numinputs=0) (struct sam_rminfo *buf, size_t bufsize) %{
+%}
+
+%feature("pythonprepend") sam_request_mod %{
+  args.__add__((args[len(args)-1],))
+%}
+
+%rename(sam_request) sam_request_mod;
+%inline %{
+int sam_request_mod(const char *path,  const char *media, char **vsns, int *pos, size_t len, struct sam_rminfo *buf, size_t bufsize){
+    int i;
+    
+    bufsize=SAM_RMINFO_SIZE(len);
+    buf = (struct sam_rminfo *) malloc(bufsize);
+    
+    buf->n_vsns = len;
+    strncpy(buf->media, media, 4);
+    for (i=0; i < len; i++) { 
+      strncpy (buf->section[i].vsn, vsns[i], 32);
+      buf->section[i].position = pos[i];
+    }
+    sam_request(path, buf, bufsize);
+}
+%}
+
 
 %typemap(out) int %{
   $result = PyInt_FromLong($1);
@@ -420,7 +479,7 @@ int sam_lstat(const char *path, struct sam_stat *buf, size_t bufsize);
 int sam_devstat(ushort_t eq, sam_devstat_t *buf, size_t bufsize);
 int sam_vsn_stat(const char *path, int copy, struct sam_section *buf, size_t bufsize);
 int sam_readrminfo(const char *path, struct sam_rminfo *buf, size_t bufsize);
-int sam_request(const char *path, struct sam_rminfo *buf, size_t bufsize);
+/* int sam_request(const char *path, struct sam_rminfo *buf, size_t bufsize);  */
 int sam_getcatalog(int cat_handle, uint_t start_slot, uint_t end_slot,
                 struct sam_cat_ent *buf, size_t entbufsize);
 int sam_restore_copy(const char *path, int copy, struct sam_stat *buf,
