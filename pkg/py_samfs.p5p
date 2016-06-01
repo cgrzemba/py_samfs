@@ -1,0 +1,14 @@
+set name=pkg.fmri value=library/python-2/py-samfs@5.0
+set name=info.upstream-url value=http://github.com/cgrzemba/py_samfs
+set name=info.source-url value=https://github.com/cgrzemba/py_samfs.git
+depend fmri=runtime/python-26 type=require
+set name=pkg.summary value="A Python interface to the SAM-FS"
+set name=pkg.name value=library/python-2/py-samfs
+set name=description value="The py-samfs module is a Python interface to the SAM-FS"
+file path=usr/lib/python2.6/site-packages/samapi.py
+file path=usr/lib/python2.6/site-packages/samfs.py
+file path=usr/lib/python2.6/site-packages/_samapi.so
+file path=usr/lib/python2.6/site-packages/samapi.pyc
+file path=usr/lib/python2.6/site-packages/samfs.pyc
+file path=usr/lib/python2.6/site-packages/samapi-0.1-py2.6.egg-info
+depend fmri=__TBD pkg.debug.depend.file=libpython2.6.so.1.0 pkg.debug.depend.path=lib pkg.debug.depend.path=opt/SUNWsamfs/lib pkg.debug.depend.path=usr/lib pkg.debug.depend.reason=usr/lib/python2.6/site-packages/_samapi.so pkg.debug.depend.type=elf type=require
