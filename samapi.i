@@ -524,6 +524,21 @@ int sam_opencat(const char *path, struct sam_cat_tbl *buf, size_t bufsize);
    result = sam_undamage(arg1, arg2, args[0], args[1], args[2], args[3], args[4],
                    args[5],args[6],args[7],args[8],args[9], NULL);
 }
+%feature("action") sam_exarchive {
+   char **args = args2;
+   result = sam_exarchive(arg1, arg2, args[0], args[1], args[2], args[3], args[4],
+                   args[5],args[6],args[7],args[8],args[9], NULL);
+}
+%feature("action") sam_unarchive {
+   char **args = args2;
+   result = sam_unarchive(arg1, arg2, args[0], args[1], args[2], args[3], args[4],
+                   args[5],args[6],args[7],args[8],args[9], NULL);
+}
+%feature("action") sam_unrearch {
+   char **args = args2;
+   result = sam_unrearch(arg1, arg2, args[0], args[1], args[2], args[3], args[4],
+                   args[5],args[6],args[7],args[8],args[9], NULL);
+}
 
 int sam_archive(const char *path, const char *ops);
 int sam_stage(const char *path, const char *ops);
