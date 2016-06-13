@@ -1,4 +1,6 @@
 
+# pay attention to the VERSION numbers in setup.py, pkg/pkginfo, pkg/py_samfs.p5p
+
 SRC = sam
 # BUILDREMOTEAPI = -DREMOTE
 
@@ -20,6 +22,9 @@ all: $(SRC)api_wrap.c $(SRC)fs.py
 install: 
 	sudo $(PYTHON) setup.py install $(BUILDREMOTEPY)
 	
+pkg:
+	cd pkg && ./mkpkg
+
 clean:
 	rm -rf build 
 	rm samapi_wrap.c
