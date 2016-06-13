@@ -102,19 +102,19 @@ VSN_BASE = 20 # the 20 correspondes to the index of copy0_vsn in static PyStruct
 def willRearch(path,ncopy):
     return (sam_stat(path)[CF_BASE + ncopy-1] & CF_REARCH) != 0 
     
-def isStale(path,copy):
+def isStale(path,ncopy):
     return (sam_stat(path)[CF_BASE + ncopy-1] & CF_STALE) != 0
     
-def isDamaged(path,copy):
+def isDamaged(path,ncopy):
     return (sam_stat(path)[CF_BASE + ncopy-1] & CF_DAMAGED) != 0
 
-def isArchived(path,copy):
+def isArchived(path,ncopy):
     return (sam_stat(path)[CF_BASE + ncopy-1] & CF_ARCHIVED) != 0
 
-def isUnArchived(path,copy):
+def isUnArchived(path,ncopy):
     return (sam_stat(path)[CF_BASE + ncopy-1] & CF_UNARCHIVED) != 0
 
-def isInconsistent(path,copy):
+def isInconsistent(path,ncopy):
     return (sam_stat(path)[CF_BASE + ncopy-1] & CF_INCONSISTENT) != 0
     
 def hasDamagedCopy(path):
