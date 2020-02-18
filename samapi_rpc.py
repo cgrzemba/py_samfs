@@ -72,6 +72,12 @@ def sam_attrtoa(*args):
   return _samapi_rpc.sam_attrtoa(*args)
 sam_attrtoa = _samapi_rpc.sam_attrtoa
 
+def sam_request(*args):
+  args.__add__((args[len(args)-1],))
+
+
+  return _samapi_rpc.sam_request(*args)
+
 def sam_stat(*args):
   return _samapi_rpc.sam_stat(*args)
 sam_stat = _samapi_rpc.sam_stat

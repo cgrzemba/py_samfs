@@ -50,11 +50,12 @@
 %}
 
 #if !defined(REMOTE)
-%inline %{ 
+%inline %{
+ 
 typedef struct sam_devstat sam_devstat_t; 
 
 static PyTypeObject DevStatResultType = {0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-static PyStructSequence_Field DevStatResultFileds[8]={
+static PyStructSequence_Field DevStatResultFields[8]={
   {"type","Media type"},
   {"name","Device name"},
   {"vsn","VSN of mounted volume"},
@@ -68,8 +69,47 @@ static PyStructSequence_Field DevStatResultFileds[8]={
 static PyStructSequence_Desc DevStatResultDesc = {
     "devstat_result",
     NULL,
-    DevStatResultFileds,
+    DevStatResultFields,
     7
+};
+
+static PyTypeObject CatTblResultType = {0,0,0,0,0,0,0,0,0,0};
+static PyStructSequence_Field CatTblResultFields[6]={
+    { "handle", "Catalog Handle" },
+    { "audit_time", "Audit time" },
+	{ "version", "Catalog version number" },
+	{ "count", "Number of slots" },
+	{ "media", "Media type, if entire catalog is one" },
+    {0}
+};
+static PyStructSequence_Desc CatTblResultDesc = {
+    "catalog_table",
+    NULL,
+    CatTblResultFields,
+    5
+};
+
+
+static PyTypeObject CatEntResultType = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+static PyStructSequence_Field CatEntResultFields[12]={
+   { "type", "Type of slot"},
+	{ "status", "Catalog entry status" },
+	{ "media", "Media type" },
+	{ "vsn", "VSN" },
+	{ "access", "Count of accesses" },
+	{ "capacity", "Capacity of volume" },
+	{ "space", "Space left on volume" },
+	{ "ptoc_fwa", "First word address of PTOC" },
+	{ "modification_time", "last modification time" },
+	{ "mount_time", "Last mount time"},
+	{ "bar_code", "Bar code (zero filled)" },
+    {0}
+};
+static PyStructSequence_Desc CatEntResultDesc = {
+    "catalog_entry",
+    NULL,
+    CatEntResultFields,
+    11
 };
 %}
 #endif
@@ -124,7 +164,7 @@ static PyStructSequence_Desc StatResultDesc = {
 };
 
 static PyTypeObject SectionResultType = {0,0,0,0,0,0,0,0};
-static PyStructSequence_Field SectionResultFields[] = {
+static PyStructSequence_Field SectionResultFields[5] = {
    { "vsn","Section length of file on this volume" },
    { "length","Position of archive file for this section"},
    { "position","Location of copy section in archive file"},
@@ -140,7 +180,7 @@ static PyStructSequence_Desc SectionResultDesc = {
 };
 
 static PyTypeObject RminfoResultType = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-static PyStructSequence_Field RminfoResultFields [] = {
+static PyStructSequence_Field RminfoResultFields [15] = {
        {"flags"," Access flags"},
        {"media"," Media type"},
        {"creation_time","Time file created"},
@@ -191,16 +231,30 @@ char *sam_attrtoa(int attr, char *string);
     }
     Py_INCREF((PyObject*) &StatResultType);
     PyModule_AddObject(m, "stat_result", (PyObject*) &StatResultType);
+
     if (SectionResultType.tp_name == 0) {
         PyStructSequence_InitType(&SectionResultType, &SectionResultDesc);
     }
     Py_INCREF((PyObject*) &SectionResultType);
     PyModule_AddObject(m, "section_result", (PyObject*) &SectionResultType);
+
     if (RminfoResultType.tp_name == 0) {
         PyStructSequence_InitType(&RminfoResultType, &RminfoResultDesc);
     }
     Py_INCREF((PyObject*) &RminfoResultType);
     PyModule_AddObject(m, "section_result", (PyObject*) &RminfoResultType);
+
+    if (CatTblResultType.tp_name == 0) {
+        PyStructSequence_InitType(&CatTblResultType, &CatTblResultDesc);
+    }
+    Py_INCREF((PyObject*) &CatTblResultType);
+    PyModule_AddObject(m, "opencat_result", (PyObject*) &CatTblResultType);
+
+    if (CatEntResultType.tp_name == 0) {
+        PyStructSequence_InitType(&CatEntResultType, &CatEntResultDesc);
+    }
+    Py_INCREF((PyObject*) &CatEntResultType);
+    PyModule_AddObject(m, "catentry_result", (PyObject*) &CatEntResultType);
 %}
 
 
@@ -256,6 +310,7 @@ $target		- ???
     $result = v;
 } 
 %apply  sam_devstat_t* { struct sam_devstat * };
+
 #endif
 
 %typemap(in,numinputs=0) (struct sam_stat *buf, size_t bufsize) %{
@@ -460,8 +515,103 @@ int sam_request_mod(const char *path,  const char *media, char **vsns, int *pos,
 %typemap(out) int %{
   $result = PyInt_FromLong($1);
 %}
- 
+
+// for sam_opencat
+%typemap(in,noblock=1,numinputs=0) (struct sam_cat_tbl *buf, size_t bufsize) %{
+ $2 = sizeof (struct sam_cat_tbl);
+ $1 = malloc($2);
+%}
+
+%typemap(argout) (struct sam_cat_tbl *buf, size_t bufsize) %{
+    Py_XDECREF($result);
+    if (result < 0){
+        if($2 == sizeof(struct sam_cat_tbl))
+	       free($1);
+        PyErr_SetFromErrno(PyExc_IOError);
+	    goto fail;
+    }
+    PyObject *v = PyStructSequence_New(&CatTblResultType);
+    if (v == NULL){
+        if($2 == sizeof(struct sam_cat_tbl))
+	       free($1);
+        goto fail;
+    }
+    PyStructSequence_SET_ITEM(v, 0,PyLong_FromLong((long)result));
+    PyStructSequence_SET_ITEM(v, 1,PyLong_FromLong((long)$1->audit_time));
+    PyStructSequence_SET_ITEM(v, 2,PyLong_FromLong((long)$1->version));
+    PyStructSequence_SET_ITEM(v, 3,PyLong_FromLong((long)$1->count));
+    PyStructSequence_SET_ITEM(v, 4,PyString_FromString($1->media));
+    if (PyErr_Occurred()) {
+        Py_DECREF(v);
+        goto fail;
+    }
+    $result = v;
+%} 
+// for sam_getcatalog
+%typemap(in,noblock=1,numinputs=0) (struct sam_cat_ent *buf, size_t entbufsize)%{
+ $2 = sizeof (struct sam_cat_ent);
+ $1 = malloc($2);
+%}
+
+%typemap(argout) (struct sam_cat_ent *buf, size_t entbufsize) %{
+    Py_XDECREF($result);
+    if (result < 0){
+        if($2 == sizeof(struct sam_cat_ent))
+	       free($1);
+        PyErr_SetFromErrno(PyExc_IOError);
+	    goto fail;
+    }
+
+    $result = PyList_New(result);
+    for(int i = 0; i < result; i++) {
+
+        PyObject *v = PyStructSequence_New(&CatEntResultType);
+        if (v == NULL){
+            if($2 == sizeof(struct sam_cat_ent))
+	           free($1);
+            goto fail;
+        }
+
+        struct sam_cat_ent *ep = &$1[i];
+        PyStructSequence_SET_ITEM(v, 0,PyLong_FromLong((long)ep->type));
+        PyStructSequence_SET_ITEM(v, 1,PyLong_FromLong((long)ep->status));
+        PyStructSequence_SET_ITEM(v, 2,PyString_FromString(ep->media));
+        PyStructSequence_SET_ITEM(v, 3,PyString_FromString(ep->vsn));
+        PyStructSequence_SET_ITEM(v, 4,PyLong_FromLong((long)ep->access));
+        PyStructSequence_SET_ITEM(v, 5,PyLong_FromLong((long)ep->capacity));
+        PyStructSequence_SET_ITEM(v, 6,PyLong_FromLong((long)ep->space));
+        PyStructSequence_SET_ITEM(v, 7,PyLong_FromLong((long)ep->ptoc_fwa));
+        PyStructSequence_SET_ITEM(v, 8,PyLong_FromLong((long)ep->modification_time));
+        PyStructSequence_SET_ITEM(v, 9,PyLong_FromLong((long)ep->mount_time));
+        PyStructSequence_SET_ITEM(v, 10,PyString_FromString((const char*)ep->bar_code));
+
+        if (PyErr_Occurred()) {
+            Py_DECREF(v);
+            goto fail;
+        }
+        PyList_SetItem($result,i,v);
+    }
+%} 
+
+
 %apply int {ushort_t};
+%apply int {uint_t};
+// throw exception if return <> 0
+
+%exception %{
+   $action
+   if (result<0) {
+       PyErr_SetFromErrno(PyExc_IOError); 
+       goto fail;
+   }
+%}
+
+#if !defined(REMOTE)
+int sam_opencat(const char *path, struct sam_cat_tbl *buf, size_t bufsize);
+int sam_getcatalog(int cat_handle, uint_t start_slot, uint_t end_slot, struct sam_cat_ent *buf, size_t entbufsize);
+#endif
+
+/* the following functions return status as integer, but all should throw exception on error */
 
 // throw exception if return <> 0
 %exception %{
@@ -480,21 +630,17 @@ int sam_devstat(ushort_t eq, sam_devstat_t *buf, size_t bufsize);
 int sam_vsn_stat(const char *path, int copy, struct sam_section *buf, size_t bufsize);
 int sam_readrminfo(const char *path, struct sam_rminfo *buf, size_t bufsize);
 /* int sam_request(const char *path, struct sam_rminfo *buf, size_t bufsize);  */
-int sam_getcatalog(int cat_handle, uint_t start_slot, uint_t end_slot,
-                struct sam_cat_ent *buf, size_t entbufsize);
 int sam_restore_copy(const char *path, int copy, struct sam_stat *buf,
         size_t bufsize, struct sam_section *vbuf, size_t vbufsize);
 int sam_segment_vsn_stat(const char *path, int copy, int segment_index,
         struct sam_section *buf, size_t bufsize);
 
 int sam_restore_file(const char *path, struct sam_stat *buf, size_t bufsize);
-int sam_opencat(const char *path, struct sam_cat_tbl *buf, size_t bufsize);
+
 #endif
 
-/* the following functions return status as integer, but all should throw exception on error */
-
-
-/* %varargs(7,int numopts = 0) sam_rearch; */ 
+/* %varargs(10,char *arg = NULL) sam_rearch; */ 
+/* description here: http://www.swig.org/Doc1.3/Varargs.html */
 %typemap(in) ( int num_opts , ...)(char *args[10]) {
     int i;
     int argc = PyInt_AsLong($input);
@@ -557,7 +703,7 @@ int sam_cancelstage(const char *name);
 int sam_mig_stage_error(tp_stage_t *, int);
 int sam_mig_create_file(char *path, struct sam_stat *buf);
 */
-int sam_closecat(int cat_handle);
+
 /*
 int sam_mig_stage_write(tp_stage_t *, char *, int, offset_t);
 int sam_mig_stage_file(tp_stage_t *);
@@ -567,4 +713,9 @@ int sam_unarchive(const char *name, int num_opts, ...);
 int sam_damage(const char *name, int num_opts, ...);
 int sam_ssum(const char *name, const char *opns);
 int sam_unrearch(const char *name, int num_opts, ...);
+
+// ignore return, already mapped to exception
+// %typemap(out) int %{
+// %}
+int sam_closecat(int cat_handle);
 #endif

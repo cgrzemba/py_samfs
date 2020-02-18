@@ -1,0 +1,14 @@
+set name=pkg.fmri value=library/python-$(PYV)/py-samfs@0.1,5.11-0.151.1.7:20130726T104355Z
+set name=pkg.summary value="A Python interface to the SAM-FS"
+set name=pkg.name value=library/python-$(PYV)/py-samfs
+set name=description value="The py-samfs module is a Python binding to Lib SAMFS"
+dir group=sys mode=0755 owner=root path=usr
+dir group=bin mode=0755 owner=root path=usr/lib
+dir group=bin mode=0755 owner=root path=usr/lib/python$(PYVER)
+dir group=bin mode=0755 owner=root path=usr/lib/python$(PYVER)/site-packages
+file usr/lib/python$(PYVER)/site-packages/samapi.py group=bin mode=0644 owner=root path=usr/lib/python$(PYVER)/site-packages/samapi.py
+file usr/lib/python$(PYVER)/site-packages/samfs.py group=bin mode=0644 owner=root path=usr/lib/python$(PYVER)/site-packages/samfs.py
+file usr/lib/python$(PYVER)/site-packages/_samapi.so group=bin mode=0755 owner=root path=usr/lib/python$(PYVER)/site-packages/_samapi.so
+file usr/lib/python$(PYVER)/site-packages/samapi.pyc group=bin mode=0644 owner=root path=usr/lib/python$(PYVER)/site-packages/samapi.pyc
+file usr/lib/python$(PYVER)/site-packages/samfs.pyc group=bin mode=0644 owner=root path=usr/lib/python$(PYVER)/site-packages/samfs.pyc
+file usr/lib/python$(PYVER)/site-packages/samapi-0.1-py$(PYVER).egg-info group=bin mode=0644 owner=root path=usr/lib/python$(PYVER)/site-packages/samapi-0.1-py$(PYVER).egg-info

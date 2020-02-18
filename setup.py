@@ -1,7 +1,9 @@
 from distutils.core import setup, Extension
 import re, sys
 
-conf_extra_compile_args = ['-g']
+conf_extra_compile_args  = ['-Wno-unknown-pragmas']
+conf_extra_compile_args += ['-Wno-unused-but-set-variable']
+conf_extra_compile_args += ['-g']
 
 if "--remote" in sys.argv:
     MOD = 'samapi_rpc'
@@ -11,14 +13,16 @@ if "--remote" in sys.argv:
     sys.argv.remove("--remote")
 else: 
     MOD = 'samapi'
-    libdirs = ['/opt/SUNWsamfs/lib','/opt/csw/lib']
+    libdirs = ['/opt/SUNWsamfs/lib']
     libs = ['sam','samcat','samapi','samfs']
 
 incdirs = ['/opt/SUNWsamfs/include']
 
 setup(name=MOD, 
-    version = '0.1',
+    version = '0.2',
     author = "Carsten Grzemba",
+    author_email = "cgrzemba@opencsw.org",
+    url='https://github.com/cgrzemba/py_samfs',
     description = "SamFS %s API created with SWIG" % 'RPC' if re.match('.*rpc',MOD) else '',
     py_modules = [MOD,re.sub('api','fs',MOD)],
     ext_modules=[Extension('_'+MOD ,sources=['samapi_wrap.c'],
