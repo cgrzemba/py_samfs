@@ -1,4 +1,4 @@
-set name=pkg.fmri value=library/python-$(PYV)/py-samfs@0.1,5.11-0.151.1.7:20130726T104355Z
+set name=pkg.fmri value=library/python-$(PYV)/py-samfs@0.1
 set name=pkg.summary value="A Python interface to the SAM-FS"
 set name=pkg.name value=library/python-$(PYV)/py-samfs
 set name=description value="The py-samfs module is a Python binding to Lib SAMFS"
