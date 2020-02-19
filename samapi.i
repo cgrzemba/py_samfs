@@ -73,9 +73,8 @@ static PyStructSequence_Desc DevStatResultDesc = {
     7
 };
 
-static PyTypeObject CatTblResultType = {0,0,0,0,0,0,0,0,0,0};
-static PyStructSequence_Field CatTblResultFields[6]={
-    { "handle", "Catalog Handle" },
+static PyTypeObject CatTblResultType = {0,0,0,0,0,0,0,0};
+static PyStructSequence_Field CatTblResultFields[5]={
     { "audit_time", "Audit time" },
 	{ "version", "Catalog version number" },
 	{ "count", "Number of slots" },
@@ -86,11 +85,11 @@ static PyStructSequence_Desc CatTblResultDesc = {
     "catalog_table",
     NULL,
     CatTblResultFields,
-    5
+    4
 };
 
 
-static PyTypeObject CatEntResultType = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+static PyTypeObject CatEntResultType = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 static PyStructSequence_Field CatEntResultFields[12]={
    { "type", "Type of slot"},
 	{ "status", "Catalog entry status" },
@@ -536,25 +535,34 @@ int sam_request_mod(const char *path,  const char *media, char **vsns, int *pos,
 	       free($1);
         goto fail;
     }
-    PyStructSequence_SET_ITEM(v, 0,PyLong_FromLong((long)result));
-    PyStructSequence_SET_ITEM(v, 1,PyLong_FromLong((long)$1->audit_time));
-    PyStructSequence_SET_ITEM(v, 2,PyLong_FromLong((long)$1->version));
-    PyStructSequence_SET_ITEM(v, 3,PyLong_FromLong((long)$1->count));
-    PyStructSequence_SET_ITEM(v, 4,PyString_FromString($1->media));
+    PyStructSequence_SET_ITEM(v, 0,PyLong_FromLong((long)$1->audit_time));
+    PyStructSequence_SET_ITEM(v, 1,PyLong_FromLong((long)$1->version));
+    PyStructSequence_SET_ITEM(v, 2,PyLong_FromLong((long)$1->count));
+    PyStructSequence_SET_ITEM(v, 3,PyString_FromString($1->media));
     if (PyErr_Occurred()) {
         Py_DECREF(v);
         goto fail;
     }
-    $result = v;
+    $result = SWIG_Python_AppendOutput($result,v);
 %} 
-// for sam_getcatalog
-%typemap(in,noblock=1,numinputs=0) (struct sam_cat_ent *buf, size_t entbufsize)%{
- $2 = sizeof (struct sam_cat_ent);
- $1 = malloc($2);
+// for sam_getcatalog, dirty hack: end_slot should not consumed by typemap
+%typemap(in,numinputs=1)(uint_t end_slot, struct sam_cat_ent *buf, size_t entbufsize)%{
+  int val3;
+  ecode2 = SWIG_AsVal_int(swig_obj[2], &val3);
+  if (!SWIG_IsOK(ecode2)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "sam_getcatalog" "', argument " "3"" of type '" "uint_t""'");
+  } 
+  arg3 = (uint_t)(val3);
+  if ($1 > arg2) {
+     $3 = sizeof (struct sam_cat_ent);
+     $2 = malloc($3 * ($1 - arg2));
+  } else {
+    SWIG_exception_fail(-1, "in method '" "sam_getcatalog" "', arg3 have to be bigger than arg2");
+  }
 %}
 
 %typemap(argout) (struct sam_cat_ent *buf, size_t entbufsize) %{
-    Py_XDECREF($result);
+    // Py_XDECREF($result);
     if (result < 0){
         if($2 == sizeof(struct sam_cat_ent))
 	       free($1);
