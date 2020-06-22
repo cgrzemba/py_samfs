@@ -9,14 +9,15 @@ PYTHON = /usr/bin/python
 
 PYVER = 2.7
 PYV = $(subst .,,$(PYVER))
-ARCH = $(shell uname -i)
+MACH = $(shell uname -m).32bit
+ARCH = $(shell isainfo | cut -d" " -f2)
 REL = $(subst 5,2,$(shell uname -r))
 SWIG_FLAGS = -v -Wall 
 
-BUILDDIR = build/temp.solaris-$(REL)-$(ARCH)-$(PYVER)
+BUILDDIR = build/temp.solaris-$(REL)-$(MACH)-$(PYVER)
 BUILDREMOTEPY = $(shell echo $(subst -D,--,$(BUILDREMOTEAPI)) | tr A-Z a-z)
 DESTDIR = /tmp/py_sam
-IPSREPO = ~/samfs/samqfs/repo
+IPSREPO = ~/samfs/samqfs/repo/$(ARCH)
 
 %_wrap.c:	%.i
 	swig -python $(SWIG_FLAGS) $(BUILDREMOTEAPI) $*.i 
@@ -40,7 +41,7 @@ ipspkg:
 clean:
 	rm -rf build 
 	rm -rf $(DESTDIR)
-	rm samapi_wrap.c pkg/generated.p5m
+	rm samapi_wrap.* *.pyc pkg/generated.p5m
 	
 show-var:
 	@echo $($(ARG))

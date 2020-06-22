@@ -581,13 +581,13 @@ int sam_request_mod(const char *path,  const char *media, char **vsns, int *pos,
         }
 
         struct sam_cat_ent *ep = &$1[i];
-        PyStructSequence_SET_ITEM(v, 0,PyLong_FromLong((long)ep->type));
-        PyStructSequence_SET_ITEM(v, 1,PyLong_FromLong((long)ep->status));
+        PyStructSequence_SET_ITEM(v, 0,PyLong_FromUnsignedLong(ep->type));
+        PyStructSequence_SET_ITEM(v, 1,PyLong_AsUnsignedLongLong(ep->status));
         PyStructSequence_SET_ITEM(v, 2,PyString_FromString(ep->media));
         PyStructSequence_SET_ITEM(v, 3,PyString_FromString(ep->vsn));
         PyStructSequence_SET_ITEM(v, 4,PyLong_FromLong((long)ep->access));
-        PyStructSequence_SET_ITEM(v, 5,PyLong_FromLong((long)ep->capacity));
-        PyStructSequence_SET_ITEM(v, 6,PyLong_FromLong((long)ep->space));
+        PyStructSequence_SET_ITEM(v, 5,PyLong_FromUnsignedLong(ep->capacity));
+        PyStructSequence_SET_ITEM(v, 6,PyLong_FromUnsignedLong(ep->space));
         PyStructSequence_SET_ITEM(v, 7,PyLong_FromLong((long)ep->ptoc_fwa));
         PyStructSequence_SET_ITEM(v, 8,PyLong_FromLong((long)ep->modification_time));
         PyStructSequence_SET_ITEM(v, 9,PyLong_FromLong((long)ep->mount_time));

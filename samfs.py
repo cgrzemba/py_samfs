@@ -79,7 +79,16 @@ CF_AR_FLAGS_MASK =       0x00FF  # the flags in the stat struct from
                                         # the AR_FLAGS in the inode 
 CF_PAX_ARCH_FMT =        0x8000  # from SAR_hdr_off0 in the inode 
 
-
+CES_NEEDSAUDIT = 0x80000000
+CES_INUSE      = 0x40000000 # slot in use
+CES_LABLED   = 0x20000000 # volume has label
+CES_OCCUPIED = 0x08000000 # Lib Slot occupied
+CES_BARCODE  = 0x02000000 # volume has barcode
+CES_RECYCLE  = 0x00400000
+CES_NONSAM   = 0x00080000 # not a sam tape
+CES_DUPVSN   = 0x00004000
+CES_ARCHFULL = 0x00000800 # volume found full by archiver
+CES_EMPTY    = 0x00000400
 
 def isOffline(path):
     return (sam_stat(path).attr & SS_OFFLINE) != 0
@@ -167,4 +176,14 @@ def getAllFilesForRearch(path,vsn):
             if vsn in getAllVSNForFile(paths).keys() and willRearch(paths,getAllVSNForFile(paths)[vsn]):
                     filelist.append(paths)
     return filelist
+
+# catalog functions
+def occupiedSlot(slot):
+    return (slot.status & CES_OCCUPIED) != 0
+
+def fullVol(slot):
+    return ((slot.status & CES_ARCHFULL) != 0) or (slot.space == 0)
+
+def samVol(slot):
+    return not ((slot.status & CES_NONSAM) != 0)
 
