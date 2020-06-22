@@ -2,7 +2,7 @@
  *
  * Main File samfsapi
  * Written By: Carsten Grzemba (cgrzemba@opencsw.org)
- * Last Modified: 29-11-2013
+ * Last Modified: 20-06-2020
  *
  * # CDDL HEADER START
  * #
@@ -89,9 +89,8 @@ static PyStructSequence_Desc CatTblResultDesc = {
 };
 
 
-static PyTypeObject CatEntResultType = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-static PyStructSequence_Field CatEntResultFields[12]={
-   { "type", "Type of slot"},
+static PyTypeObject CatEntResultType = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+static PyStructSequence_Field CatEntResultFields[13]={
 	{ "status", "Catalog entry status" },
 	{ "media", "Media type" },
 	{ "vsn", "VSN" },
@@ -102,6 +101,8 @@ static PyStructSequence_Field CatEntResultFields[12]={
 	{ "modification_time", "last modification time" },
 	{ "mount_time", "Last mount time"},
 	{ "bar_code", "Bar code (zero filled)" },
+	{ "lvtime", "Last verified time"},
+	{ "lvpos", "Last verified pos"},
     {0}
 };
 static PyStructSequence_Desc CatEntResultDesc = {
@@ -545,29 +546,30 @@ int sam_request_mod(const char *path,  const char *media, char **vsns, int *pos,
     }
     $result = SWIG_Python_AppendOutput($result,v);
 %} 
-// for sam_getcatalog, dirty hack: end_slot should not consumed by typemap
-%typemap(in,numinputs=1)(uint_t end_slot, struct sam_cat_ent *buf, size_t entbufsize)%{
+// for sam_getcatalog(lv), dirty hack: end_slot should not consumed by typemap
+%typemap(in,numinputs=1)(uint_t end_slot, struct sam_cat_entlv *buflv, size_t entbufsize)%{
   int val3;
-  ecode2 = SWIG_AsVal_int(swig_obj[2], &val3);
+//  ecode2 = SWIG_AsVal_int(swig_obj[2], &val3);
+  ecode2 = SWIG_AsVal_int(obj2, &val3);
   if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "sam_getcatalog" "', argument " "3"" of type '" "uint_t""'");
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "sam_getcatalog(lv)" "', argument " "3"" of type '" "uint_t""'");
   } 
   arg3 = (uint_t)(val3);
   if ($1 > arg2) {
-     $3 = sizeof (struct sam_cat_ent);
+     $3 = sizeof (struct sam_cat_entlv);
      $2 = malloc($3 * ($1 - arg2));
   } else {
-    SWIG_exception_fail(-1, "in method '" "sam_getcatalog" "', arg3 have to be bigger than arg2");
+    SWIG_exception_fail(-1, "in method '" "sam_getcatalog(lv)" "', arg3 have to be bigger than arg2");
   }
 %}
 
-%typemap(argout) (struct sam_cat_ent *buf, size_t entbufsize) %{
+%typemap(argout) (struct sam_cat_entlv *buflv, size_t entbufsize) %{
     // Py_XDECREF($result);
     if (result < 0){
-        if($2 == sizeof(struct sam_cat_ent))
-	       free($1);
+        if($2 == sizeof(struct sam_cat_entlv))
+            free($1);
         PyErr_SetFromErrno(PyExc_IOError);
-	    goto fail;
+        goto fail;
     }
 
     $result = PyList_New(result);
@@ -575,23 +577,24 @@ int sam_request_mod(const char *path,  const char *media, char **vsns, int *pos,
 
         PyObject *v = PyStructSequence_New(&CatEntResultType);
         if (v == NULL){
-            if($2 == sizeof(struct sam_cat_ent))
-	           free($1);
+            if($2 == sizeof(struct sam_cat_entlv))
+               free($1);
             goto fail;
         }
 
-        struct sam_cat_ent *ep = &$1[i];
-        PyStructSequence_SET_ITEM(v, 0,PyLong_FromUnsignedLong(ep->type));
-        PyStructSequence_SET_ITEM(v, 1,PyLong_AsUnsignedLongLong(ep->status));
-        PyStructSequence_SET_ITEM(v, 2,PyString_FromString(ep->media));
-        PyStructSequence_SET_ITEM(v, 3,PyString_FromString(ep->vsn));
-        PyStructSequence_SET_ITEM(v, 4,PyLong_FromLong((long)ep->access));
-        PyStructSequence_SET_ITEM(v, 5,PyLong_FromUnsignedLong(ep->capacity));
-        PyStructSequence_SET_ITEM(v, 6,PyLong_FromUnsignedLong(ep->space));
-        PyStructSequence_SET_ITEM(v, 7,PyLong_FromLong((long)ep->ptoc_fwa));
-        PyStructSequence_SET_ITEM(v, 8,PyLong_FromLong((long)ep->modification_time));
-        PyStructSequence_SET_ITEM(v, 9,PyLong_FromLong((long)ep->mount_time));
-        PyStructSequence_SET_ITEM(v, 10,PyString_FromString((const char*)ep->bar_code));
+        struct sam_cat_entlv *ep = &$1[i];
+        PyStructSequence_SET_ITEM(v, 0,PyLong_FromUnsignedLong(ep->status));
+        PyStructSequence_SET_ITEM(v, 1,PyString_FromString(ep->media));
+        PyStructSequence_SET_ITEM(v, 2,PyString_FromString(ep->vsn));
+        PyStructSequence_SET_ITEM(v, 3,PyLong_FromLong((long)ep->access));
+        PyStructSequence_SET_ITEM(v, 4,PyLong_FromUnsignedLong(ep->capacity));
+        PyStructSequence_SET_ITEM(v, 5,PyLong_FromUnsignedLong(ep->space));
+        PyStructSequence_SET_ITEM(v, 6,PyLong_FromLong((long)ep->ptoc_fwa));
+        PyStructSequence_SET_ITEM(v, 7,PyLong_FromLong((long)ep->modification_time));
+        PyStructSequence_SET_ITEM(v, 8,PyLong_FromLong((long)ep->mount_time));
+        PyStructSequence_SET_ITEM(v, 9,PyString_FromString((const char*)ep->bar_code));
+        PyStructSequence_SET_ITEM(v, 10,PyLong_FromLong((long)ep->lvtime));
+        PyStructSequence_SET_ITEM(v, 11,PyLong_FromLong((long)ep->lvpos));
 
         if (PyErr_Occurred()) {
             Py_DECREF(v);
@@ -616,7 +619,9 @@ int sam_request_mod(const char *path,  const char *media, char **vsns, int *pos,
 
 #if !defined(REMOTE)
 int sam_opencat(const char *path, struct sam_cat_tbl *buf, size_t bufsize);
-int sam_getcatalog(int cat_handle, uint_t start_slot, uint_t end_slot, struct sam_cat_ent *buf, size_t entbufsize);
+int     sam_getcataloglv(int cat_handle, uint_t start_slot, uint_t end_slot,
+                struct sam_cat_entlv *buflv, size_t entbufsize);
+
 #endif
 
 /* the following functions return status as integer, but all should throw exception on error */
