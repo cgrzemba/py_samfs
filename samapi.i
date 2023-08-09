@@ -32,10 +32,9 @@
 %module samapi
 #endif
  %{
+#include "lib.h"
 #include <string.h>
 #include <errno.h>
-#include "lib.h"
-#include "stat.h"
 /* #include "mig.h" */ 
 #include "rminfo.h"
 #if defined(REMOTE)
@@ -243,6 +242,7 @@ char *sam_attrtoa(int attr, char *string);
     Py_INCREF((PyObject*) &RminfoResultType);
     PyModule_AddObject(m, "section_result", (PyObject*) &RminfoResultType);
 
+#if !defined(REMOTE)
     if (CatTblResultType.tp_name == 0) {
         PyStructSequence_InitType(&CatTblResultType, &CatTblResultDesc);
     }
@@ -254,6 +254,7 @@ char *sam_attrtoa(int attr, char *string);
     }
     Py_INCREF((PyObject*) &CatEntResultType);
     PyModule_AddObject(m, "catentry_result", (PyObject*) &CatEntResultType);
+#endif  /* !defined(REMOTE) */
 %}
 
 
@@ -333,28 +334,27 @@ $target		- ???
     }
 
     PyStructSequence_SET_ITEM(v, 0, PyInt_FromLong((long)$1->st_mode));
-    PyStructSequence_SET_ITEM(v, 1,
-                              PyLong_FromLongLong((PY_LONG_LONG)$1->st_ino));
+    PyStructSequence_SET_ITEM(v, 1, PyInt_FromLong((long)$1->st_ino));
     PyStructSequence_SET_ITEM(v, 2,
-                              PyLong_FromLongLong((PY_LONG_LONG)$1->st_dev));
+                              PyLong_FromLongLong((uint64_t)$1->st_dev));
     PyStructSequence_SET_ITEM(v, 3, PyInt_FromLong((long)$1->st_nlink));
     PyStructSequence_SET_ITEM(v, 4, PyInt_FromLong((long)$1->st_uid));
     PyStructSequence_SET_ITEM(v, 5, PyInt_FromLong((long)$1->st_gid));
     PyStructSequence_SET_ITEM(v, 6,
-                              PyLong_FromLongLong((PY_LONG_LONG)$1->st_size));
+                              PyLong_FromLongLong((uint64_t)$1->st_size));
     PyStructSequence_SET_ITEM(v, 7,
-                              PyInt_FromLong((long)$1->st_atime));
+                              PyLong_FromLongLong((PY_LONG_LONG)$1->st_atime));
     PyStructSequence_SET_ITEM(v, 8,
-                              PyInt_FromLong((long)$1->st_mtime));
+                              PyLong_FromLongLong((PY_LONG_LONG)$1->st_mtime));
     PyStructSequence_SET_ITEM(v, 9,
-                              PyInt_FromLong((long)$1->st_ctime));
+                              PyLong_FromLongLong((PY_LONG_LONG)$1->st_ctime));
     PyStructSequence_SET_ITEM(v, 10,
-                              PyInt_FromLong((long)$1->st_blocks));
+                              PyLong_FromLongLong((uint64_t)$1->st_blocks));
     PyStructSequence_SET_ITEM(v, 11,
-                              PyInt_FromLong((long)$1->rdev));
+                              PyLong_FromLongLong((uint64_t)$1->rdev));
     PyStructSequence_SET_ITEM(v, 12,
                               PyInt_FromLong((long)$1->gen));
-    PyStructSequence_SET_ITEM(v, 13, PyInt_FromLong((long)$1->attr));
+    PyStructSequence_SET_ITEM(v, 13, PyLong_FromLongLong((uint64_t)$1->attr));
     PyStructSequence_SET_ITEM(v, 14, PyInt_FromLong((long)$1->flags));
     { int n; int copies=0;
 #if MAX_ARCHIVE>4
@@ -488,6 +488,7 @@ $target		- ???
 %typemap(in,noblock=1,numinputs=0) (struct sam_rminfo *buf, size_t bufsize) %{
 %}
 
+#if !defined(REMOTE)
 %feature("pythonprepend") sam_request_mod %{
   args.__add__((args[len(args)-1],))
 %}
@@ -509,7 +510,7 @@ int sam_request_mod(const char *path,  const char *media, char **vsns, int *pos,
     sam_request(path, buf, bufsize);
 }
 %}
-
+#endif /* !defined(REMOTE) */
 
 %typemap(out) int %{
   $result = PyInt_FromLong($1);

@@ -9,27 +9,33 @@ conf_extra_compile_args = ['-g']
 
 if platform.python_version_tuple()[0] == '3':
     if platform.uname()[4] == 'i86pc':
-    	libdirsuffix = '/amd64'
+    	libdirsuffix = '/lib/amd64'
+    elif platform.uname()[4] == 'x86_64':
+        libdirsuffix = '/lib64'
     else:
-    	libdirsuffix = '/sparcv9'
+    	libdirsuffix = '/lib/sparcv9'
 else:
-    libdirsuffix = ''
+    libdirsuffix = '/lib'
+
+# verbose is default
+# sys.argv.append("--verbose")
 
 if "--remote" in sys.argv:
     MOD = 'samapi_rpc'
-    libdirs = ['/opt/SUNWsamfs/client/lib'+libdirsuffix]
+    libdirs = ['/opt/SUNWsamfs/client'+libdirsuffix]
     libs = ['samrpc','nsl']
     conf_extra_compile_args += ['-DREMOTE']
     sys.argv.remove("--remote")
 else: 
     MOD = 'samapi'
     libdirs = ['/opt/SUNWsamfs/lib'+libdirsuffix]
-    libs = ['sam','samcat','samapi','samfs']
+#    libs = ['sam','samcat','samapi','samfs']
+    libs = ['sam','samcat','samfs']
 
-incdirs = ['/opt/SUNWsamfs/include']
+incdirs = ['../samqfs/include/pub','../samqfs/include']
 
 setup(name=MOD, 
-    version = '0.2',
+    version = '5.64.4',
     author = "Carsten Grzemba",
     author_email = "cgrzemba@opencsw.org",
     url='https://github.com/cgrzemba/py_samfs',
